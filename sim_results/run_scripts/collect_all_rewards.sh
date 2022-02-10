@@ -1,0 +1,5 @@
+bash collect_expert_script.sh
+bash collect_assigned_script.sh
+bash collect_loc_based_script.sh
+bash collect_uniform_script.sh
+bash collect_combined_script.sh

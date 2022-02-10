@@ -6,19 +6,16 @@ from rps.utilities.barrier_certificates import *
 from rps.utilities.misc import *
 from rps.utilities.controllers import *
 from reward_net import RewardNet
+import sys
 
 
 
-# Some gains for this experiment.  These aren't incredibly relevant.
-d = 0.3
-ddiag = np.sqrt(5)*d
-formation_control_gain = 10
 
 # Experiment constants
 iterations = 2000
 dt = 1
 N = 3
-
+task = 'transport'
 #Limit maximum linear speed of any robot
 magnitude_limit = 10
 
@@ -27,11 +24,27 @@ si_barrier_cert = create_single_integrator_barrier_certificate_with_boundary()
 si_to_uni_dyn = create_si_to_uni_dynamics()
 dxi = np.zeros((2, N))
 
-policy = [RewardNet(policy_path='model.npy', model_choice=i) for i in range(N)]
 
-obs_size = 9 
+policy = [RewardNet(policy_path='model_file1.npy', model_choice=i, split=True) for i in range(N)]
+
+obs_size = 9 if task == 'transport' else 14
 trajs = np.zeros((3, obs_size, iterations))
 
+nav_entity = np.random.random(size=(3,2)) * 2 - 1
+
+cov_entity = np.random.random(size=(2,2)) * 2 - 1
+cov_var = np.random.random(size=(2,))
+
+if (task == 'navigation'):
+    r.axes.scatter(nav_entity[0,0],nav_entity[0,1], s=4000, zorder=-2)
+    r.axes.scatter(nav_entity[1,0],nav_entity[1,1], s=4000, zorder=-2)
+    r.axes.scatter(nav_entity[2,0],nav_entity[2,1], s=4000, zorder=-2)
+elif (task == 'transport'):
+    r.axes.scatter(-0.5,0, s=4000, zorder=-2)
+    r.axes.scatter(0.5,0, s=4000, zorder=-2)
+elif  (task == 'coverage'):
+    r.axes.scatter(cov_entity[0,0],cov_entity[0,1], s=4000, zorder=-2)
+    r.axes.scatter(cov_entity[1,0],cov_entity[1,1], s=4000, zorder=-2)
 prev_pay = np.ones((3,))
 
 for k in range(iterations):
@@ -42,11 +55,7 @@ for k in range(iterations):
     # Initialize a velocity vector
     F = np.zeros((2,N))
 
-    nav_entity = np.array([[1,0,-1], [0,0,0]]).T
-    cov_entity = np.array([[-1,1], [0,0]])
-    cov_var = np.array([1,1])
 
-    print(x[0, :])
     
     for i in range(N):
         # Navigation Observation Space
@@ -57,18 +66,15 @@ for k in range(iterations):
         # obs[10:] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).flatten()
 
         # Transport Observation Space
-        obs = np.zeros((9,))
-        obs[:2] = np.squeeze(dxi[:, i])
-        obs[2:4] = np.squeeze(x[:2, i])
-        if (prev_pay[i] == 1) and (np.linalg.norm(x[:2, i] - np.array([1, 0])) < 0.4):
-            prev_pay[i] = 0
-            
-        print(prev_pay)
-        if (prev_pay[i] == 0) and (np.linalg.norm(x[:2, i] - np.array([-1, 0])) < 0.4):
-            prev_pay[i] = 1
-            
-        obs[4] = 1-prev_pay[i]
-        obs[5:] = np.array([1, 0, -1, 0])
+        # obs = np.zeros((9,))
+        # obs[:2] = np.squeeze(dxi[:, i])
+        # obs[2:4] = np.squeeze(x[:2, i])
+        # if (prev_pay[i] == 1) and (np.linalg.norm(x[:2, i] - np.array([-0.5,0])) < 0.3):
+        #     prev_pay[i] = 0
+        # elif (prev_pay[i] == 0) and (np.linalg.norm(x[:2, i] - np.array([0.5,0])) < 0.3):
+        #     prev_pay[i] = 1
+        # obs[4] = prev_pay[i]
+        # obs[5:] = np.array([0.5, 0, -0.5, 0])
 
 
 
@@ -87,6 +93,41 @@ for k in range(iterations):
         # obs[10:12] = np.squeeze(x[:2, i])
         # obs[12:] = np.squeeze(dxi[:, i])
 
+        if task == 'navigation':
+            obs = np.zeros((14,))
+            obs[:2] = np.squeeze(dxi[:, i])
+            obs[2:4] = np.squeeze(x[:2, i])
+            obs[4:10] = (nav_entity - x[:2, [i]].T).flatten()
+            obs[10:] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).flatten()
+
+        # Transport Observation Space
+        if task == 'transport':
+            
+            obs = np.zeros((9,))
+            obs[:2] = np.squeeze(dxi[:, i])
+            obs[2:4] = np.squeeze(x[:2, i])
+            if (prev_pay[i] == 1) and (np.linalg.norm(x[:2, i] - np.array([-0.5,0])) < 0.2):
+                prev_pay[i] = 0
+            elif (prev_pay[i] == 0) and (np.linalg.norm(x[:2, i] - np.array([0.5,0])) < 0.2):
+                prev_pay[i] = 1
+            obs[4] = prev_pay[i]
+            obs[5:] = np.array([0.5, 0, -0.5, 0])
+
+        # Coverage Observation Space
+        if task == 'coverage':
+            obs = np.zeros((14,))
+            cov1 = cov_entity[:,0]
+            cov2 = cov_entity[:,1]
+            var1 = cov_var[0]
+            var2 = cov_var[1]
+            obs[:2] = cov1 - x[:2, i]
+            obs[2] = var1
+            obs[3:5] = cov2 - x[:2, i]
+            obs[5] = var2
+            obs[6:10] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).flatten()
+            obs[10:12] = np.squeeze(x[:2, i])
+            obs[12:] = np.squeeze(dxi[:, i])
+
         trajs[i, :, k] = obs
         act = np.argmax(policy[i].get_action(obs))
 
@@ -99,7 +140,6 @@ for k in range(iterations):
         elif act == 4:
             F[1, i] = -1
 
-    
     dxi += F * dt
 
 
@@ -125,3 +165,7 @@ with open('trajectories.npy', 'wb') as f:
 
 #Call at end of script to print debug information and for your script to run on the Robotarium server properly
 r.call_at_scripts_end()
+
+
+if __name__ == '__main__':
+    main()

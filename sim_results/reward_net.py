@@ -1,12 +1,13 @@
 import numpy as np
+import joblib
 class RewardNet:
     def __init__(self, gamma=0.99, reward_path=None, policy_path=None, model_choice=0, split = False):
-        loaded_params = list(np.load(reward_path if policy_path is None else policy_path, allow_pickle=True))
+        # loaded_params = list(np.load(reward_path if policy_path is None else policy_path, allow_pickle=True))
 
-        #policy_path[policy_path.find('1')] = '2'
-        if split:
-            loaded_params.extend(np.load(policy_path.replace('1', '2'), allow_pickle=True))
-        
+        # #policy_path[policy_path.find('1')] = '2'
+        # if split:
+        #     loaded_params.extend(np.load(policy_path.replace('1', '2'), allow_pickle=True))
+        loaded_params = joblib.load(reward_path if policy_path is None else policy_path)
         hidden_size=128
         if reward_path is not None:
             
@@ -74,7 +75,6 @@ class RewardNet:
         # Returns raw output of network
         obs = np.array(obs)
         obs = obs[:, np.newaxis]
-
         y1 = self.relu(np.matmul(self.params_dict['w0'], obs) +self.params_dict['b0'])
         y2 = self.relu(np.matmul(self.params_dict['w1'], y1) + self.params_dict['b1'])
         yo = (np.matmul(self.params_dict['wo'], y2) + self.params_dict['bo'])
