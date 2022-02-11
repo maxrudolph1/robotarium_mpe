@@ -12,8 +12,8 @@ for i,param in enumerate(loaded_params):
     out_file[i] = (param)
 
 
-with open('model_file1.npy', 'wb') as f:
+with open(sys.argv[1] + '1.npy', 'wb') as f:
     np.save(f, out_file[:int(len(out_file)/2)])
 
-with open('model_file2.npy', 'wb') as f:
+with open(sys.argv[1] + '2.npy', 'wb') as f:
     np.save(f, out_file[int(len(out_file)/2):])

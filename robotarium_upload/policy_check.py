@@ -15,23 +15,23 @@ import sys
 iterations = 2000
 dt = 1
 N = 3
-task = 'transport'
-learned = False
+task = 'coverage'
+learned = True
 #Limit maximum linear speed of any robot
 magnitude_limit = 10
 
 r = robotarium.Robotarium(number_of_robots=N, show_figure=True, sim_in_real_time=True)
-si_barrier_cert = create_single_integrator_barrier_certificate_with_boundary()
+si_barrier_cert = create_single_integrator_barrier_certificate_with_boundary(barrier_gain=1000)
 si_to_uni_dyn = create_si_to_uni_dynamics()
 dxi = np.zeros((2, N))
 
 path = task+'1.npy' if not learned else 'l'+task+'1.npy'
-policy = [RewardNet(policy_path=path, model_choice=i, split=True) for i in range(N)]
+policy = [RewardNet(policy_path=path, model_choice= 1 if task=='transport' else i, split=True) for i in range(N)]
 
 obs_size = 9 if task == 'transport' else 14
 trajs = np.zeros((3, obs_size, iterations))
 
-nav_entity = np.random.random(size=(3,2)) * 2 - 1
+nav_entity = np.array([[-1, 0.75],[0, 0],[1, -0.75]])  #np.random.random(size=(3,2)) * 2 - 1
 
 cov_entity = np.random.random(size=(2,2)) * 2 - 1
 cov_var = np.random.random(size=(2,))
@@ -107,9 +107,9 @@ for k in range(iterations):
             obs = np.zeros((9,))
             obs[:2] = np.squeeze(dxi[:, i])
             obs[2:4] = np.squeeze(x[:2, i])
-            if (prev_pay[i] == 1) and (np.linalg.norm(x[:2, i] - np.array([-0.5,0])) < 0.2):
+            if (prev_pay[i] == 1) and (np.linalg.norm(x[:2, i] - np.array([-0.5,0])) < 0.3):
                 prev_pay[i] = 0
-            elif (prev_pay[i] == 0) and (np.linalg.norm(x[:2, i] - np.array([0.5,0])) < 0.2):
+            elif (prev_pay[i] == 0) and (np.linalg.norm(x[:2, i] - np.array([0.5,0])) < 0.3):
                 prev_pay[i] = 1
             obs[4] = prev_pay[i]
             obs[5:] = np.array([0.5, 0, -0.5, 0])
@@ -125,7 +125,7 @@ for k in range(iterations):
             obs[2] = var1
             obs[3:5] = cov2 - x[:2, i]
             obs[5] = var2
-            obs[6:10] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).flatten()
+            obs[6:10] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).T.flatten()
             obs[10:12] = np.squeeze(x[:2, i])
             obs[12:] = np.squeeze(dxi[:, i])
         trajs[i, :, k] = obs
@@ -165,7 +165,3 @@ with open('trajectories.npy', 'wb') as f:
 
 #Call at end of script to print debug information and for your script to run on the Robotarium server properly
 r.call_at_scripts_end()
-
-
-if __name__ == '__main__':
-    main()

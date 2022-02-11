@@ -66,7 +66,18 @@ for task in tasks:
         print((nx*ny - U1)/(nx*ny))
         print(nx * ny)
 
+count = 0
+fig, axs = plt.subplots(3,3)
+for task in tasks:
+    for meth in other_meths:
+        
+        count += 1
+        axs[0][0].plot(data_dict[meth][task],data_dict['assigned'][task], '*')
+        # plt.set_aspect('equal', 'box')
 
+
+## Plotting Violins
+'''
 plt.figure()
 for op,task in enumerate(tasks):
     plt.subplot(1,3,op+1)
@@ -180,7 +191,7 @@ for op,task in enumerate(tasks):
     lab = [task in e.lower() for e in tasks]
     res = [i for i, val in enumerate(lab) if val]
     plt.title(tasks[res[0]])
-
+'''
 plt.show(block=False)
 plt.pause(0.001) # Pause for interval seconds.
 input("hit[enter] to end.")
