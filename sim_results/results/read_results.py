@@ -3,13 +3,15 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sb
 import matplotlib.patches as mpatches
+from scipy.stats import mannwhitneyu
+sb.set_theme(style="darkgrid")
 
 bcfc_rew = []
 unif_rew = []
 mono_rew = []
 rand_rew = []
 
-tasks = ['navigation','coverage', 'transport']
+tasks = ['navigation','coverage','transport']
 meths = ['expert', 'assigned', 'loc_based', 'uniform', 'combined']
 data_dict = {}
 diff_dict = {}
@@ -57,6 +59,14 @@ df = pd.DataFrame({'task' : task_list, 'meth': meth_list, 'rew':val_list})
 diff_df = pd.DataFrame({'task' : diff_task_list, 'meth': diff_meth_list, 'rew':diff_val_list})
 
 
+for task in tasks:
+    for meth in other_meths:
+        U1, p = mannwhitneyu(data_dict[meth][task],data_dict['assigned'][task])
+        nx, ny = data_dict[meth][task].shape[0], data_dict['assigned'][task].shape[0]
+        print((nx*ny - U1)/(nx*ny))
+        print(nx * ny)
+
+
 plt.figure()
 for op,task in enumerate(tasks):
     plt.subplot(1,3,op+1)
@@ -72,7 +82,7 @@ for op,task in enumerate(tasks):
                     x='meth',
                     y='rew',
                     size=1.5)
-    boxwidth= 0.025 if task == 'transport' else 0.075
+    boxwidth= 0.075 if task == 'transport' else 0.075
     sb.boxplot(data=cur_data,
                     x='meth',
                     y='rew',
@@ -96,9 +106,9 @@ for op,task in enumerate(tasks):
     print('----------')  
 
     patch0 = mpatches.Patch(color=patches[0], label='Expert')
-    patch1 = mpatches.Patch(color=patches[1], label='BCFC (ours)')
-    patch2 = mpatches.Patch(color=patches[2], label='Location-based Assignment')
-    patch3 = mpatches.Patch(color=patches[3], label='Uniform Assignment')
+    patch1 = mpatches.Patch(color=patches[1], label='BCFC (Full Pipeline)')
+    patch2 = mpatches.Patch(color=patches[2], label='BCFC (Random Task Allocation)')
+    patch3 = mpatches.Patch(color=patches[3], label='BCFC (Uniform Task Allocation)')
     patch4 = mpatches.Patch(color=patches[4], label='Monolithic')   
 
     if task == 'transport':
@@ -131,7 +141,7 @@ for op,task in enumerate(tasks):
                     x='meth',
                     y='rew',
                     size=1.5)
-    boxwidth= 0.025 if task == 'transport' else 0.075
+    boxwidth= 0.075 if task == 'transport' else 0.075
     sb.boxplot(data=cur_data,
                     x='meth',
                     y='rew',
@@ -155,8 +165,8 @@ for op,task in enumerate(tasks):
     print('----------')  
 
 
-    patch0 = mpatches.Patch(color=patches[0], label='Location-based Assignment')
-    patch1 = mpatches.Patch(color=patches[1], label='Uniform Assignment')
+    patch0 = mpatches.Patch(color=patches[0], label='BCFC (Random Task Allocation)')
+    patch1 = mpatches.Patch(color=patches[1], label='BCFC (Uniform Task Allocation)')
     patch2 = mpatches.Patch(color=patches[2], label='Monolithic')   
 
     if task == 'transport':
@@ -175,13 +185,4 @@ plt.show(block=False)
 plt.pause(0.001) # Pause for interval seconds.
 input("hit[enter] to end.")
 plt.close('all') 
-# for i,task in enumerate(tasks):
-#     plt.subplot(1,3,i+1)
-#     print(np.sum(data_dict['assigned'][task], axis=0).shape)
-#     plt.boxplot([np.sum(data_dict[meth][task], axis=0) for meth in meths])
-#     plt.xticks(np.arange(4) + 1, meths)
-#     plt.title(task)
-#     plt.xlabel('method')
-#     plt.ylabel('reward')
-# plt.show()
 
