@@ -63,17 +63,27 @@ for task in tasks:
     for meth in other_meths:
         U1, p = mannwhitneyu(data_dict[meth][task],data_dict['assigned'][task])
         nx, ny = data_dict[meth][task].shape[0], data_dict['assigned'][task].shape[0]
-        print((nx*ny - U1)/(nx*ny))
-        print(nx * ny)
+
 
 count = 0
-fig, axs = plt.subplots(3,3)
-for task in tasks:
-    for meth in other_meths:
+fig, axs = plt.subplots(1,3)
+for i,task in enumerate(tasks):
+    for j,meth in enumerate(['combined']):
         
         count += 1
-        axs[0][0].plot(data_dict[meth][task],data_dict['assigned'][task], '*')
-        # plt.set_aspect('equal', 'box')
+        mask = data_dict['assigned'][task] > data_dict[meth][task]
+        axs[i].plot(data_dict[meth][task][mask],data_dict['assigned'][task][mask], 'g.')
+        axs[i].plot(data_dict[meth][task][np.logical_not(mask)],data_dict['assigned'][task][np.logical_not(mask)], 'r.')
+        perf = str(np.sum(mask)/mask.shape[0])
+        print(perf)
+        yl = axs[i].get_ylim()
+        xl = axs[i].get_xlim()
+        lim = np.array(xl if xl[1] - xl[0] > yl[1] - yl[0] else yl)
+        axs[i].set_xlim(lim[0], lim[1])
+        axs[i].set_ylim(lim[0], lim[1])
+        axs[i].set_title(perf)
+        axs[i].plot(lim, lim, '-')
+        axs[i].set_aspect('equal')
 
 
 ## Plotting Violins
