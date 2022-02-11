@@ -16,6 +16,7 @@ iterations = 2000
 dt = 1
 N = 3
 task = 'transport'
+learned = False
 #Limit maximum linear speed of any robot
 magnitude_limit = 10
 
@@ -24,8 +25,8 @@ si_barrier_cert = create_single_integrator_barrier_certificate_with_boundary()
 si_to_uni_dyn = create_si_to_uni_dynamics()
 dxi = np.zeros((2, N))
 
-
-policy = [RewardNet(policy_path='model_file1.npy', model_choice=i, split=True) for i in range(N)]
+path = task+'1.npy' if not learned else 'l'+task+'1.npy'
+policy = [RewardNet(policy_path=path, model_choice=i, split=True) for i in range(N)]
 
 obs_size = 9 if task == 'transport' else 14
 trajs = np.zeros((3, obs_size, iterations))
@@ -127,7 +128,6 @@ for k in range(iterations):
             obs[6:10] = (x[:2, [l for l in range(N) if not (l == i)]] - x[:2,i]).flatten()
             obs[10:12] = np.squeeze(x[:2, i])
             obs[12:] = np.squeeze(dxi[:, i])
-
         trajs[i, :, k] = obs
         act = np.argmax(policy[i].get_action(obs))
 
